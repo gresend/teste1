@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime, date
 import os
 from fpdf import FPDF  
+from io import BytesIO
 
 # csv
 csv_file = 'pacientes.csv'
@@ -52,21 +53,11 @@ def agendar_consulta(nome_paciente, medico, data_hora):
 def gerar_pdf(nome_paciente, medico, data_consulta, receitas):
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Arial", size=12)  # Verifique se a fonte está disponível
+    pdf.set_font("Arial", size=12)
 
     pdf.cell(200, 10, txt="--- RECEITA MÉDICA ---", ln=True, align='C')
     pdf.cell(200, 10, txt=f"Paciente: {nome_paciente}", ln=True)
     pdf.cell(200, 10, txt="Observações:", ln=True)
-    pdf.cell(200, 10, txt="", ln=True)
-    pdf.cell(200, 10, txt="", ln=True)
-    pdf.cell(200, 10, txt="", ln=True)
-    pdf.cell(200, 10, txt="", ln=True)
-    pdf.cell(200, 10, txt="", ln=True)
-    pdf.cell(200, 10, txt="", ln=True)
-    pdf.cell(200, 10, txt="", ln=True)
-    pdf.cell(200, 10, txt="", ln=True)
-    pdf.cell(200, 10, txt="", ln=True)
-    pdf.cell(200, 10, txt="", ln=True)
     pdf.cell(200, 10, txt="", ln=True)
 
     for receita in receitas:
@@ -75,16 +66,13 @@ def gerar_pdf(nome_paciente, medico, data_consulta, receitas):
     pdf.cell(200, 10, txt="Assinatura:__________________________", ln=True)
     pdf.cell(200, 10, txt=f"Data da Consulta: {data_consulta}", ln=True)
     pdf.cell(200, 10, txt="Coronel Xavier Chaves, Minas Gerais", ln=True)
-    
-    pdf.cell(200, 10, txt="", ln=True)
-    pdf.cell(200, 10, txt="", ln=True)
-    pdf.cell(200, 10, txt="", ln=True)
-    pdf.cell(200, 10, txt="", ln=True)
-    pdf.cell(200, 10, txt="", ln=True)
 
-    pdf_file_name = f"receita_{nome_paciente.replace(' ', '_')}_{data_consulta.replace('/', '-')}.pdf"
-    pdf.output(pdf_file_name)
-    return pdf_file_name
+    # Salvar o PDF em um objeto BytesIO
+    pdf_bytes = BytesIO()
+    pdf.output(pdf_bytes)
+    pdf_bytes.seek(0)  # Voltar ao início do BytesIO
+
+    return pdf_bytes
 
 # menu lateral
 st.image('cabecalho.png', caption=None, channels="RGB")
@@ -125,7 +113,6 @@ elif opcao == "Editar Paciente":
             else:
                 paciente = paciente_encontrado_edit.iloc[0]
                 
-                # Verificar se a coluna existe
                 nome = st.text_input("Nome", value=paciente['Nome'])
                 cpf = st.text_input("CPF", value=paciente['CPF'])
                 data_nascimento = st.date_input("Data de Nascimento", value=pd.to_datetime(paciente['Data de Nascimento']))
@@ -187,8 +174,13 @@ elif opcao == "Iniciar Consulta":
                     st.write(receita)
 
                 if receitas:
-                    pdf_file_name = gerar_pdf(nome_paciente, medico, data_consulta, receitas)
-                    st.success(f"Receita gerada com sucesso! [Clique aqui para baixar]({pdf_file_name})")
+                    pdf_file = gerar_pdf(nome_paciente, medico, data_consulta, receitas)
+                    st.download_button(
+                        label="Clique aqui para baixar a receita",
+                        data=pdf_file,
+                        file_name=f"receita_{nome_paciente.replace(' ', '_')}_{data_consulta.replace('/', '-')}.pdf",
+                        mime='application/pdf'
+                    )
                 else:
                     st.success("Nenhum sintoma selecionado. Receita não gerada.")
 
@@ -214,7 +206,6 @@ elif opcao == "Agendar Consulta":
             st.success("Consulta agendada com sucesso!")
         else:
             st.error("Não foi possível agendar a consulta, pois o paciente não foi encontrado.")
-
 
 elif opcao == "Ver Consultas Agendadas":
     st.header("Consultas Agendadas")
