@@ -1,9 +1,10 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import os
 from fpdf import FPDF  
 from io import BytesIO
+import tempfile
 
 # csv
 csv_file = 'pacientes.csv'
@@ -12,7 +13,7 @@ consultas_file = 'consultas.csv'
 # criar dataframe
 if os.path.exists(csv_file):
     st.session_state.pacientes = pd.read_csv(csv_file)
-    st.session_state.pacientes['CPF'] = st.session_state.pacientes['CPF'].astype(str)  # Garantir que CPF seja string
+    st.session_state.pacientes['CPF'] = st.session_state.pacientes['CPF'].astype(str)
 else:
     st.session_state.pacientes = pd.DataFrame(columns=['Nome', 'CPF', 'Data de Nascimento', 'Endereço', 'Telefone'])
 
@@ -67,12 +68,10 @@ def gerar_pdf(nome_paciente, medico, data_consulta, receitas):
     pdf.cell(200, 10, txt=f"Data da Consulta: {data_consulta}", ln=True)
     pdf.cell(200, 10, txt="Coronel Xavier Chaves, Minas Gerais", ln=True)
 
-    # Salvar o PDF em um objeto BytesIO
-    pdf_bytes = BytesIO()
-    pdf.output(pdf_bytes)
-    pdf_bytes.seek(0)  # Voltar ao início do BytesIO
-
-    return pdf_bytes
+    # Salvar o PDF em um arquivo temporário
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
+        pdf.output(tmp_file.name)
+        return tmp_file.name
 
 # menu lateral
 st.image('cabecalho.png', caption=None, channels="RGB")
@@ -175,12 +174,13 @@ elif opcao == "Iniciar Consulta":
 
                 if receitas:
                     pdf_file = gerar_pdf(nome_paciente, medico, data_consulta, receitas)
-                    st.download_button(
-                        label="Clique aqui para baixar a receita",
-                        data=pdf_file,
-                        file_name=f"receita_{nome_paciente.replace(' ', '_')}_{data_consulta.replace('/', '-')}.pdf",
-                        mime='application/pdf'
-                    )
+                    with open(pdf_file, "rb") as f:
+                        st.download_button(
+                            label="Clique aqui para baixar a receita",
+                            data=f,
+                            file_name=f"receita_{nome_paciente.replace(' ', '_')}_{data_consulta.replace('/', '-')}.pdf",
+                            mime='application/pdf'
+                        )
                 else:
                     st.success("Nenhum sintoma selecionado. Receita não gerada.")
 
@@ -222,7 +222,7 @@ elif opcao == "Ver Consultas Agendadas":
         st.warning("Não há consultas agendadas para essa data.")
 
 st.sidebar.image('adm.png', caption=None, channels="RGB")
-opcao = st.sidebar.selectbox("Escolha uma opção", ["Cadastrar Médico"])
+st.sidebar.selectbox("Escolha uma opção", ["Cadastrar Médico"])
 
 st.sidebar.image('relatorios.png', caption=None, channels="RGB")
-opcao = st.sidebar.selectbox("Escolha uma opção", ["Relatórios de Consultas"])
+st.sidebar.selectbox("Escolha uma opção", ["Relatórios de Consultas"])
