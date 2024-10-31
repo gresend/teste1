@@ -138,6 +138,9 @@ elif opcao == "Iniciar Consulta":
                 selected_paciente = paciente_encontrado1.iloc[0]
                 st.session_state.selected_paciente = selected_paciente
 
+                data_nascimento_str = pd.to_datetime(selected_paciente['Data de Nascimento']).strftime("%d/%m/%Y")
+                st.write(f"Data de Nascimento: {data_nascimento_str}")
+
         else:
             st.warning("Paciente não encontrado.")
 
