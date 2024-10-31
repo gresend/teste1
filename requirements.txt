@@ -1,7 +1,7 @@
-import streamlit as st
-import pandas as pd
+import streamlit==1.38.0 as st
+import pandas==2.2.2 as pd
 from datetime import datetime, date, timedelta
 import os
-from fpdf import FPDF  
+from fpdf==1.7.2 import FPDF  
 from io import BytesIO
 import tempfile
